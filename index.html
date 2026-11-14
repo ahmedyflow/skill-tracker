@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<link rel="manifest" href="manifest.json">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>20 Hour Tracker</title>
+<style>
+:root{
+  --bg:#f5f4f1; --surface:#ffffff; --text:#1c1b1a; --sub:#6b6762;
+  --accent:#b5502f; --accent-text:#ffffff; --border:#e4e1db; --bar-bg:#eceae5;
+  --danger:#b3362b; --gold:#a8841f; --chip:#efe9e0;
+  color-scheme: light;
+  padding-top: env(safe-area-inset-top,0px);
+  padding-bottom: env(safe-area-inset-bottom,0px);
+}
+html{scroll-padding-top: env(safe-area-inset-top,0px);}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#1b1a18; --surface:#242321; --text:#efece6; --sub:#9b9690;
+    --accent:#d9784f; --accent-text:#1b1a18; --border:#35332f; --bar-bg:#2f2d2a;
+    --danger:#e07a6c; --gold:#e0b34f; --chip:#322e29;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#1b1a18; --surface:#242321; --text:#efece6; --sub:#9b9690;
+  --accent:#d9784f; --accent-text:#1b1a18; --border:#35332f; --bar-bg:#2f2d2a;
+  --danger:#e07a6c; --gold:#e0b34f; --chip:#322e29;
+  color-scheme: dark;
+}
+*{box-sizing:border-box;}
+body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;}
+.wrap{max-width:760px;margin:0 auto;padding:28px 18px 60px;}
+h1{font-size:22px;margin:0 0 4px;display:flex;justify-content:space-between;align-items:center;gap:8px;}
+.lede{color:var(--sub);font-size:13px;margin:0 0 10px;}
+.goal{background:linear-gradient(135deg,var(--accent),var(--gold));color:#fff;border-radius:10px;padding:10px 14px;font-size:13px;font-weight:600;margin-bottom:18px;cursor:pointer;}
+.stats{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px;}
+.stat{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:10px 14px;flex:1;min-width:100px;}
+.stat b{display:block;font-size:18px;}
+.stat span{font-size:11px;color:var(--sub);}
+.achievements{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px;}
+.ach{font-size:11px;padding:4px 9px;border-radius:20px;border:1px solid var(--border);color:var(--sub);}
+.ach.earned{background:var(--gold);color:#1b1a18;border-color:var(--gold);font-weight:600;}
+.chart{display:flex;align-items:flex-end;gap:5px;height:70px;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:8px;margin-bottom:18px;}
+.chart .bar-col{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:3px;}
+.chart .bar-col .b{width:100%;background:var(--accent);border-radius:3px 3px 0 0;min-height:2px;}
+.chart .bar-col small{font-size:9px;color:var(--sub);}
+.row{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;gap:8px;flex-wrap:wrap;}
+.toolbar{display:flex;gap:8px;flex-wrap:wrap;}
+button{font:inherit;cursor:pointer;border:none;border-radius:8px;padding:9px 14px;}
+.primary{background:var(--accent);color:var(--accent-text);font-weight:600;}
+.ghost{background:transparent;color:var(--sub);border:1px solid var(--border);}
+.ghost:hover{color:var(--text);}
+.iconbtn{background:transparent;border:1px solid var(--border);color:var(--sub);padding:6px 9px;font-size:13px;}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin-bottom:12px;position:relative;}
+.card.focus{border-color:var(--gold);box-shadow:0 0 0 1px var(--gold);}
+.card-top{display:flex;justify-content:space-between;align-items:baseline;gap:8px;}
+.card-top h3{margin:0;font-size:16px;}
+.why{font-size:12px;color:var(--sub);font-style:italic;margin:4px 0 0;}
+.tags{display:flex;gap:6px;margin:6px 0;flex-wrap:wrap;}
+.chip{background:var(--chip);color:var(--sub);font-size:11px;padding:3px 8px;border-radius:20px;}
+.group-header{font-size:12px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;color:var(--sub);margin:18px 0 8px;display:flex;align-items:center;justify-content:space-between;gap:6px;cursor:pointer;user-select:none;}
+.group-header .gh-del{font-size:10px;font-weight:600;text-transform:none;letter-spacing:0;padding:3px 8px;}
+.group-count{background:var(--chip);border-radius:20px;padding:1px 7px;font-size:10px;}
+.pct{font-size:12px;color:var(--sub);white-space:nowrap;}
+.bar{height:8px;border-radius:5px;background:var(--bar-bg);margin:8px 0 10px;overflow:hidden;}
+.fill{height:100%;background:var(--accent);border-radius:5px;transition:width .2s;}
+.card-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
+.card-actions button{font-size:12px;padding:6px 10px;}
+.timer-live{font-size:13px;font-weight:600;color:var(--accent);margin-right:4px;}
+.empty{color:var(--sub);text-align:center;padding:40px 10px;font-size:14px;}
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.4);display:flex;align-items:flex-end;justify-content:center;z-index:10;}
+@media(min-width:520px){.modal-bg{align-items:center;}}
+.modal{background:var(--surface);border-radius:14px 14px 0 0;padding:20px;width:100%;max-width:420px;max-height:88vh;overflow:auto;}
+@media(min-width:520px){.modal{border-radius:14px;}}
+.modal h2{margin:0 0 14px;font-size:17px;}
+.field{margin-bottom:12px;}
+.field label{display:block;font-size:12px;color:var(--sub);margin-bottom:5px;}
+.field input,.field select,.field textarea{width:100%;padding:9px 10px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font:inherit;}
+.modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:16px;}
+.history{font-size:12px;color:var(--sub);margin-top:6px;}
+.history div{padding:3px 0;border-top:1px dashed var(--border);}
+.stars{display:flex;gap:4px;}
+.stars span{cursor:pointer;font-size:18px;color:var(--border);}
+.stars span.on{color:var(--gold);}
+.badge{font-size:10px;padding:2px 7px;border-radius:20px;background:var(--chip);color:var(--sub);}
+.star-toggle{background:none;border:none;font-size:16px;color:var(--border);cursor:pointer;padding:0 2px;}
+.star-toggle.on{color:var(--gold);}
+.archived-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-top:1px dashed var(--border);font-size:13px;}
+.archived-row .a-actions{display:flex;gap:6px;}
+.archived-row button{font-size:11px;padding:5px 8px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>⏱ 20 Hour Tracker <button class="iconbtn" id="settingsBtn">⚙</button></h1>
+  <p class="lede">Hormozi's rule: ~20 focused hours to get competent at a skill.</p>
+  <div class="goal" id="goalNote"></div>
+
+  <div class="stats" id="stats"></div>
+  <div class="achievements" id="achievements"></div>
+  <div class="chart" id="chart"></div>
+
+  <div class="row">
+    <button class="primary" id="addSkillBtn">+ Add skill</button>
+    <div class="toolbar">
+      <button class="ghost" id="archivedBtn">Archived</button>
+      <button class="ghost" id="reportBtn">Copy progress report</button>
+      <button class="ghost" id="exportBtn">Export</button>
+      <button class="ghost" id="importBtn">Import</button>
+      <input type="file" id="importFile" accept=".json" style="display:none">
+    </div>
+  </div>
+
+  <div id="skillList"></div>
+</div>
+<datalist id="catOptions"></datalist>
+
+<script>
+const KEY = "skillTracker20h_v2";
+let state = load();
+let timers = {};
+let openHistory = {};
+
+function load(){
+  let s=null;
+  try{ const raw = localStorage.getItem(KEY); if(raw) s=JSON.parse(raw); }catch(e){}
+  if(!s) s = { skills: [], dailyGoalMinutes: 30, goalNote: "Your goal: multi-millionaire. Every logged hour is a brick in that wall.", reminder:{enabled:false,time:"20:00",lastFiredDate:null}, theme:"auto" };
+  if(!s.goalNote) s.goalNote = "Your goal: multi-millionaire. Every logged hour is a brick in that wall.";
+  if(!s.dailyGoalMinutes) s.dailyGoalMinutes = 30;
+  if(!s.reminder) s.reminder = {enabled:false,time:"20:00",lastFiredDate:null};
+  if(!s.theme) s.theme="auto";
+  if(s.longestStreak===undefined) s.longestStreak = 0;
+  if(s.lastReviewShown===undefined) s.lastReviewShown = null;
+  if(!s.collapsedGroups) s.collapsedGroups = {};
+  s.skills.forEach(sk=>{
+    if(!sk.category) sk.category="General";
+    if(sk.focus===undefined) sk.focus=false;
+    if(sk.archived===undefined) sk.archived=false;
+    if(sk.why===undefined) sk.why="";
+    sk.sessions.forEach(x=>{ if(x.rating===undefined) x.rating=null; });
+  });
+  return s;
+}
+function save(){ try{ localStorage.setItem(KEY, JSON.stringify(state)); }catch(e){} }
+function uid(){ return Math.random().toString(36).slice(2,9); }
+function totalMinutes(skill){ return skill.sessions.reduce((a,s)=>a+s.minutes,0); }
+function totalSessions(){ return state.skills.reduce((a,s)=>a+s.sessions.length,0); }
+function fmtHours(mins){ return (mins/60).toFixed(1); }
+function dayKey(ts){ return new Date(ts).toDateString(); }
+function tierOf(hours){ if(hours>=100) return "Skilled (100h+)"; if(hours>=20) return "Competent (20h+)"; return "Novice"; }
+function applyTheme(){ document.documentElement.setAttribute("data-theme", state.theme==="auto"?"":state.theme); }
+
+function computeStreak(){
+  const dayTotals = {};
+  state.skills.forEach(sk=>sk.sessions.forEach(x=>{
+    const k = dayKey(x.date); dayTotals[k]=(dayTotals[k]||0)+x.minutes;
+  }));
+  let streak=0, d=new Date();
+  while(true){
+    const k = d.toDateString();
+    if((dayTotals[k]||0) >= state.dailyGoalMinutes){ streak++; d.setDate(d.getDate()-1); }
+    else break;
+  }
+  return streak;
+}
+
+function weeklyBuckets(){
+  const weeks = [];
+  const now = new Date();
+  for(let i=7;i>=0;i--){
+    const end = new Date(now); end.setDate(now.getDate()-i*7);
+    const start = new Date(end); start.setDate(end.getDate()-6);
+    weeks.push({start:start.getTime(), end:end.getTime()+86400000, label:(i===0?"this":i+"w ago"), mins:0});
+  }
+  state.skills.forEach(sk=>sk.sessions.forEach(x=>{
+    for(const w of weeks){ if(x.date>=w.start && x.date<w.end){ w.mins+=x.minutes; break; } }
+  }));
+  return weeks;
+}
+
+function escapeHtml(str){ return str.replace(/[&<>"']/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
+function updateCatOptions(){
+  const cats = [...new Set(state.skills.map(s=>s.category).filter(Boolean))];
+  const dl = document.getElementById("catOptions");
+  if(dl) dl.innerHTML = cats.map(c=>`<option value="${escapeHtml(c)}"></option>`).join("");
+}
+
+function getAchievements(){
+  const streak = computeStreak();
+  if(streak>state.longestStreak){ state.longestStreak = streak; save(); }
+  return [
+    { label:"First session logged", earned: totalSessions()>=1 },
+    { label:"7-day streak", earned: state.longestStreak>=7 },
+    { label:"50 sessions logged", earned: totalSessions()>=50 }
+  ];
+}
+
+function render(){
+  applyTheme();
+  updateCatOptions();
+  document.getElementById("goalNote").textContent = state.goalNote;
+
+  const list = document.getElementById("skillList");
+  const statsEl = document.getElementById("stats");
+  const totalAll = state.skills.reduce((a,s)=>a+totalMinutes(s),0);
+  const mastered = state.skills.filter(s=>totalMinutes(s)>=s.target*60).length;
+  const weekCutoff = Date.now() - 7*24*60*60*1000;
+  const weekMins = state.skills.reduce((a,s)=>a+s.sessions.filter(x=>x.date>=weekCutoff).reduce((b,x)=>b+x.minutes,0),0);
+  const streak = computeStreak();
+
+  statsEl.innerHTML = `
+    <div class="stat"><b>${fmtHours(totalAll)}h</b><span>total logged</span></div>
+    <div class="stat"><b>${fmtHours(weekMins)}h</b><span>this week</span></div>
+    <div class="stat"><b>${streak}🔥</b><span>day streak</span></div>
+    <div class="stat"><b>${mastered}/${state.skills.length||0}</b><span>at 20h+</span></div>
+  `;
+
+  document.getElementById("achievements").innerHTML = getAchievements().map(a=>
+    `<span class="ach ${a.earned?"earned":""}">${a.earned?"🏆":"🔒"} ${a.label}</span>`
+  ).join("");
+
+  const weeks = weeklyBuckets();
+  const max = Math.max(1, ...weeks.map(w=>w.mins));
+  document.getElementById("chart").innerHTML = weeks.map(w=>`
+    <div class="bar-col"><div class="b" style="height:${Math.max(3,Math.round(w.mins/max*54))}px" title="${fmtHours(w.mins)}h"></div><small>${w.label}</small></div>
+  `).join("");
+
+  const activeSkills = state.skills.filter(s=>!s.archived);
+  if(!activeSkills.length){
+    list.innerHTML = `<div class="empty">No active skills. Add one and start logging focused hours.</div>`;
+    return;
+  }
+
+  const cats = [...new Set(activeSkills.map(s=>s.category))].sort((a,b)=>a.localeCompare(b));
+
+  list.innerHTML = cats.map(cat=>{
+    const group = activeSkills.filter(s=>s.category===cat).sort((a,b)=>(b.focus?1:0)-(a.focus?1:0));
+    const collapsed = !!state.collapsedGroups[cat];
+    const cards = group.map(s=>{
+      const mins = totalMinutes(s);
+      const hrs = mins/60;
+      const pct = Math.min(100, Math.round(mins/(s.target*60)*100));
+      const recent = s.sessions.slice(-3).reverse().map(x=>
+        `<div>${new Date(x.date).toLocaleDateString()} — ${fmtHours(x.minutes)}h${x.rating?" · "+"★".repeat(x.rating):""}${x.note?" · "+escapeHtml(x.note):""}</div>`
+      ).join("");
+      const running = timers[s.id];
+      const historyOpen = !!openHistory[s.id];
+      return `
+        <div class="card ${s.focus?"focus":""}">
+          <div class="card-top">
+            <h3>${escapeHtml(s.name)}</h3>
+            <span class="pct">${fmtHours(mins)} / ${s.target}h (${pct}%)</span>
+          </div>
+          ${s.why?`<p class="why">${escapeHtml(s.why)}</p>`:""}
+          <div class="tags">
+            <span class="badge">${tierOf(hrs)}</span>
+            <button class="star-toggle ${s.focus?"on":""}" title="Mark as current focus" onclick="toggleFocus('${s.id}')">★</button>
+          </div>
+          <div class="bar"><div class="fill" style="width:${pct}%"></div></div>
+          <div class="card-actions">
+            ${running
+              ? `<span class="timer-live" id="live-${s.id}">00:00</span><button class="primary" onclick="stopTimer('${s.id}')">Stop & log</button>`
+              : `<button class="ghost" onclick="startTimer('${s.id}')">Start timer</button>`}
+            <button class="primary" onclick="openLog('${s.id}')">Log manually</button>
+            <button class="ghost" onclick="viewNotes('${s.id}')">View notes</button>
+            <button class="ghost" onclick="archiveSkill('${s.id}')">Archive</button>
+            <button class="ghost" onclick="deleteSkill('${s.id}')">Delete</button>
+            ${recent?`<button class="ghost" onclick="toggleHistory('${s.id}')">${historyOpen?"Hide recent":"Show recent"}</button>`:""}
+          </div>
+          ${historyOpen && recent?`<div class="history">${recent}</div>`:""}
+        </div>
+      `;
+    }).join("");
+    const catEnc = encodeURIComponent(cat);
+    return `<div class="group-header" data-cat="${catEnc}"><span>${collapsed?"▸":"▾"} ${escapeHtml(cat)} <span class="group-count">${group.length}</span></span><button class="ghost gh-del" onclick="event.stopPropagation(); deleteGroup('${catEnc}')">Delete group</button></div><div class="group-body" style="${collapsed?"display:none;":""}">${cards}</div>`;
+  }).join("");
+
+  list.querySelectorAll(".group-header").forEach(el=>{
+    el.addEventListener("click", ()=>{
+      const cat = decodeURIComponent(el.dataset.cat);
+      state.collapsedGroups[cat] = !state.collapsedGroups[cat];
+      save(); render();
+    });
+  });
+
+  Object.keys(timers).forEach(id=>tickTimer(id));
+}
+
+let tickHandles = {};
+function startTimer(id){ timers[id] = { startedAt: Date.now() }; tickTimer(id); render(); }
+function tickTimer(id){
+  clearInterval(tickHandles[id]);
+  tickHandles[id] = setInterval(()=>{
+    const el = document.getElementById("live-"+id);
+    if(!el || !timers[id]){ clearInterval(tickHandles[id]); return; }
+    const secs = Math.floor((Date.now()-timers[id].startedAt)/1000);
+    const m = String(Math.floor(secs/60)).padStart(2,"0");
+    const s = String(secs%60).padStart(2,"0");
+    el.textContent = m+":"+s;
+  }, 1000);
+}
+function stopTimer(id){
+  const t = timers[id]; if(!t) return;
+  const mins = Math.max(1, Math.round((Date.now()-t.startedAt)/60000));
+  clearInterval(tickHandles[id]); delete timers[id];
+  openLog(id, mins);
+}
+
+function viewNotes(skillId){
+  const skill = state.skills.find(s=>s.id===skillId); if(!skill) return;
+  const sessions = [...skill.sessions].reverse();
+  const rows = sessions.length ? sessions.map(x=>`
+    <div style="padding:8px 0;border-top:1px dashed var(--border);font-size:13px;">
+      <div style="display:flex;justify-content:space-between;color:var(--sub);font-size:11px;">
+        <span>${new Date(x.date).toLocaleString()}</span>
+        <span>${fmtHours(x.minutes)}h${x.rating?" · "+"★".repeat(x.rating):""}</span>
+      </div>
+      <div>${x.note?escapeHtml(x.note):'<span style="color:var(--sub);">(no note)</span>'}</div>
+    </div>
+  `).join("") : `<p style="color:var(--sub);font-size:13px;">No sessions logged yet.</p>`;
+  openModal(`<h2>${escapeHtml(skill.name)} — session notes</h2>${rows}<div class="modal-actions"><button class="ghost" onclick="closeModal()">Close</button></div>`);
+}
+
+function openModal(html){
+  const bg = document.createElement("div");
+  bg.className = "modal-bg"; bg.id = "modalBg";
+  bg.innerHTML = `<div class="modal">${html}</div>`;
+  bg.addEventListener("click", e=>{ if(e.target===bg) closeModal(); });
+  document.body.appendChild(bg);
+}
+function closeModal(){ const m=document.getElementById("modalBg"); if(m) m.remove(); render(); }
+
+document.getElementById("addSkillBtn").addEventListener("click", ()=>{
+  openModal(`
+    <h2>Add a skill</h2>
+    <div class="field"><label>Skill name</label><input id="skillName" placeholder="e.g. Video editing"></div>
+    <div class="field"><label>Group / category</label>
+      <input id="skillCat" list="catOptions" placeholder="e.g. Business, Technical, or type a new group">
+    </div>
+    <div class="field"><label>Why are you learning this? (optional)</label><input id="skillWhy" placeholder="your reason, for the days motivation dips"></div>
+    <div class="field"><label>Target hours (default 20)</label><input id="skillTarget" type="number" value="20" min="1"></div>
+    <div class="modal-actions">
+      <button class="ghost" onclick="closeModal()">Cancel</button>
+      <button class="primary" onclick="addSkill()">Add</button>
+    </div>
+  `);
+  setTimeout(()=>document.getElementById("skillName")?.focus(),50);
+});
+function addSkill(){
+  const name = document.getElementById("skillName").value.trim();
+  const target = parseFloat(document.getElementById("skillTarget").value) || 20;
+  const category = document.getElementById("skillCat").value.trim() || "General";
+  const why = document.getElementById("skillWhy").value.trim();
+  if(!name) return;
+  state.skills.push({ id: uid(), name, target, category, why, focus:false, archived:false, sessions: [] });
+  save(); closeModal();
+}
+function toggleHistory(id){ openHistory[id] = !openHistory[id]; render(); }
+function toggleFocus(id){
+  state.skills.forEach(s=>{ s.focus = (s.id===id) ? !s.focus : false; });
+  save(); render();
+}
+function deleteSkill(id, fromArchived){
+  const skill = state.skills.find(s=>s.id===id); if(!skill) return;
+  openModal(`
+    <h2>Delete "${escapeHtml(skill.name)}"?</h2>
+    <p style="font-size:13px;color:var(--sub);">This permanently removes the skill and all ${skill.sessions.length} logged session(s). This can't be undone.</p>
+    <div class="modal-actions">
+      <button class="ghost" onclick="${fromArchived?'renderArchivedModal()':'closeModal()'}">Cancel</button>
+      <button class="primary" style="background:var(--danger);" onclick="confirmDeleteSkill('${id}', ${!!fromArchived})">Delete</button>
+    </div>
+  `);
+}
+function confirmDeleteSkill(id, fromArchived){
+  state.skills = state.skills.filter(s=>s.id!==id);
+  save();
+  if(fromArchived){ render(); renderArchivedModal(); } else { closeModal(); }
+}
+function deleteGroup(catEncoded){
+  const cat = decodeURIComponent(catEncoded);
+  const group = state.skills.filter(s=>s.category===cat && !s.archived);
+  openModal(`
+    <h2>Delete group "${escapeHtml(cat)}"?</h2>
+    <p style="font-size:13px;color:var(--sub);">This permanently deletes ${group.length} skill(s) and all their logged time: ${group.map(s=>escapeHtml(s.name)).join(", ")}.</p>
+    <div class="modal-actions">
+      <button class="ghost" onclick="closeModal()">Cancel</button>
+      <button class="primary" style="background:var(--danger);" onclick="confirmDeleteGroup('${catEncoded}')">Delete group</button>
+    </div>
+  `);
+}
+function confirmDeleteGroup(catEncoded){
+  const cat = decodeURIComponent(catEncoded);
+  state.skills = state.skills.filter(s=>!(s.category===cat && !s.archived));
+  save(); closeModal();
+}
+function archiveSkill(id){
+  const s = state.skills.find(x=>x.id===id); if(!s) return;
+  s.archived = true; s.focus = false;
+  save(); render();
+}
+function unarchiveSkill(id){
+  const s = state.skills.find(x=>x.id===id); if(!s) return;
+  s.archived = false; save(); renderArchivedModal();
+}
+
+document.getElementById("archivedBtn").addEventListener("click", renderArchivedModal);
+function renderArchivedModal(){
+  const archived = state.skills.filter(s=>s.archived);
+  const rows = archived.length ? archived.map(s=>`
+    <div class="archived-row">
+      <span>${escapeHtml(s.name)} — ${fmtHours(totalMinutes(s))}h</span>
+      <div class="a-actions">
+        <button class="ghost" onclick="unarchiveSkill('${s.id}')">Unarchive</button>
+        <button class="ghost" onclick="deleteSkill('${s.id}', true)">Delete</button>
+      </div>
+    </div>
+  `).join("") : `<p style="color:var(--sub);font-size:13px;">No archived skills.</p>`;
+  const existing = document.getElementById("modalBg");
+  if(existing) existing.remove();
+  openModal(`<h2>Archived skills</h2>${rows}<div class="modal-actions"><button class="ghost" onclick="closeModal()">Close</button></div>`);
+}
+
+let currentRating = 0;
+function openLog(skillId, prefillMinutes){
+  currentRating = 0;
+  openModal(`
+    <h2>Log time</h2>
+    <div class="field"><label>Minutes spent</label><input id="logMinutes" type="number" min="1" value="${prefillMinutes||""}" placeholder="e.g. 45"></div>
+    <div class="field"><label>Focus quality</label><div class="stars" id="starRow">${[1,2,3,4,5].map(n=>`<span data-n="${n}" onclick="setRating(${n})">★</span>`).join("")}</div></div>
+    <div class="field"><label>Note (optional)</label><input id="logNote" placeholder="what you worked on"></div>
+    <div class="modal-actions">
+      <button class="ghost" onclick="closeModal()">Cancel</button>
+      <button class="primary" onclick="saveLog('${skillId}')">Save</button>
+    </div>
+  `);
+  setTimeout(()=>document.getElementById("logMinutes")?.focus(),50);
+}
+function setRating(n){
+  currentRating = n;
+  document.querySelectorAll("#starRow span").forEach(el=>{ el.classList.toggle("on", parseInt(el.dataset.n)<=n); });
+}
+function saveLog(skillId){
+  const mins = parseFloat(document.getElementById("logMinutes").value);
+  const note = document.getElementById("logNote").value.trim();
+  if(!mins || mins<=0) return;
+  const skill = state.skills.find(s=>s.id===skillId);
+  skill.sessions.push({ date: Date.now(), minutes: mins, note, rating: currentRating||null });
+  save(); closeModal();
+}
+
+document.getElementById("settingsBtn").addEventListener("click", ()=>{
+  openModal(`
+    <h2>Settings</h2>
+    <div class="field"><label>Your goal note</label><textarea id="goalInput" rows="2">${escapeHtml(state.goalNote)}</textarea></div>
+    <div class="field"><label>Daily goal (minutes, for streak)</label><input id="dailyGoalInput" type="number" value="${state.dailyGoalMinutes}"></div>
+    <div class="field"><label>Theme</label>
+      <select id="themeInput"><option value="auto">Auto (system)</option><option value="light">Light</option><option value="dark">Dark</option></select>
+    </div>
+    <div class="field"><label><input type="checkbox" id="reminderEnabled" ${state.reminder.enabled?"checked":""}> Daily reminder if I haven't logged</label></div>
+    <div class="field"><label>Reminder time</label><input id="reminderTime" type="time" value="${state.reminder.time}"></div>
+    <p style="font-size:11px;color:var(--sub);margin-top:-6px;">Reminder only fires while this app is open in a tab.</p>
+    <div class="modal-actions">
+      <button class="ghost" onclick="closeModal()">Cancel</button>
+      <button class="primary" onclick="saveSettings()">Save</button>
+    </div>
+  `);
+  document.getElementById("themeInput").value = state.theme;
+});
+function saveSettings(){
+  state.goalNote = document.getElementById("goalInput").value.trim() || state.goalNote;
+  state.dailyGoalMinutes = parseFloat(document.getElementById("dailyGoalInput").value) || 30;
+  state.theme = document.getElementById("themeInput").value;
+  state.reminder.enabled = document.getElementById("reminderEnabled").checked;
+  state.reminder.time = document.getElementById("reminderTime").value;
+  if(state.reminder.enabled && "Notification" in window && Notification.permission==="default"){
+    Notification.requestPermission();
+  }
+  save(); closeModal();
+}
+
+function checkReminder(){
+  if(!state.reminder.enabled || !("Notification" in window) || Notification.permission!=="granted") return;
+  const now = new Date();
+  const todayKey = now.toDateString();
+  if(state.reminder.lastFiredDate===todayKey) return;
+  const [h,m] = state.reminder.time.split(":").map(Number);
+  if(now.getHours()>h || (now.getHours()===h && now.getMinutes()>=m)){
+    const todayMins = state.skills.reduce((a,s)=>a+s.sessions.filter(x=>dayKey(x.date)===todayKey).reduce((b,x)=>b+x.minutes,0),0);
+    if(todayMins < state.dailyGoalMinutes){
+      new Notification("20 Hour Tracker", { body: "You haven't logged any focused learning time today yet." });
+    }
+    state.reminder.lastFiredDate = todayKey;
+    save();
+  }
+}
+setInterval(checkReminder, 60000);
+
+function maybeShowWeeklyReview(){
+  const now = Date.now();
+  if(!state.lastReviewShown){ state.lastReviewShown = now; save(); return; }
+  if(now - state.lastReviewShown < 7*24*60*60*1000) return;
+  const cutoff = now - 7*24*60*60*1000;
+  const rows = state.skills.map(s=>{
+    const mins = s.sessions.filter(x=>x.date>=cutoff).reduce((a,x)=>a+x.minutes,0);
+    return {name:s.name, mins};
+  }).filter(r=>r.mins>0).sort((a,b)=>b.mins-a.mins);
+  state.lastReviewShown = now; save();
+  if(!rows.length) return;
+  const total = rows.reduce((a,r)=>a+r.mins,0);
+  openModal(`
+    <h2>📅 Your week in review</h2>
+    <p style="font-size:13px;color:var(--sub);">${fmtHours(total)}h logged over the last 7 days:</p>
+    ${rows.map(r=>`<div style="display:flex;justify-content:space-between;font-size:13px;padding:4px 0;border-top:1px dashed var(--border);"><span>${escapeHtml(r.name)}</span><b>${fmtHours(r.mins)}h</b></div>`).join("")}
+    <div class="modal-actions"><button class="primary" onclick="closeModal()">Keep going</button></div>
+  `);
+}
+
+document.getElementById("exportBtn").addEventListener("click", ()=>{
+  const blob = new Blob([JSON.stringify(state,null,2)], {type:"application/json"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a"); a.href = url; a.download = "skill-tracker-backup.json"; a.click();
+  URL.revokeObjectURL(url);
+});
+document.getElementById("importBtn").addEventListener("click", ()=>document.getElementById("importFile").click());
+document.getElementById("importFile").addEventListener("change", (e)=>{
+  const file = e.target.files[0]; if(!file) return;
+  const reader = new FileReader();
+  reader.onload = ()=>{
+    try{
+      const data = JSON.parse(reader.result);
+      if(data && Array.isArray(data.skills)){
+        localStorage.setItem(KEY, JSON.stringify(data));
+        state = load();
+        render();
+      } else alert("Invalid file.");
+    }catch(err){ alert("Could not read that file."); }
+  };
+  reader.readAsText(file);
+});
+
+function buildReport(){
+  const lines = [];
+  lines.push("20 HOUR TRACKER — PROGRESS REPORT");
+  lines.push("Generated: " + new Date().toLocaleString());
+  lines.push("Overall goal: " + state.goalNote);
+  lines.push("");
+  const totalAll = state.skills.reduce((a,s)=>a+totalMinutes(s),0);
+  const weekCutoff = Date.now() - 7*24*60*60*1000;
+  const weekMins = state.skills.reduce((a,s)=>a+s.sessions.filter(x=>x.date>=weekCutoff).reduce((b,x)=>b+x.minutes,0),0);
+  lines.push(`Total hours logged (all time): ${fmtHours(totalAll)}h`);
+  lines.push(`Hours logged this week: ${fmtHours(weekMins)}h`);
+  lines.push(`Current streak: ${computeStreak()} day(s) at ${state.dailyGoalMinutes}+ min/day (longest ever: ${state.longestStreak})`);
+  lines.push("");
+  lines.push("PER-SKILL BREAKDOWN (active):");
+  state.skills.filter(s=>!s.archived).forEach(s=>{
+    const mins = totalMinutes(s); const hrs=mins/60;
+    const weekS = s.sessions.filter(x=>x.date>=weekCutoff).reduce((a,x)=>a+x.minutes,0);
+    const ratings = s.sessions.filter(x=>x.rating).map(x=>x.rating);
+    const avgRating = ratings.length ? (ratings.reduce((a,b)=>a+b,0)/ratings.length).toFixed(1) : "n/a";
+    lines.push(`- ${s.name} [${s.category}]${s.focus?" (current focus)":""}: ${fmtHours(mins)}h / ${s.target}h target (${tierOf(hrs)}); ${fmtHours(weekS)}h this week; avg focus quality ${avgRating}/5; ${s.sessions.length} sessions logged.${s.why?" Why: "+s.why:""}`);
+    const notedSessions = s.sessions.filter(x=>x.note);
+    if(notedSessions.length){
+      lines.push("  Session notes:");
+      notedSessions.forEach(x=>lines.push(`    • ${new Date(x.date).toLocaleDateString()}: ${x.note}`));
+    }
+  });
+  const archivedCount = state.skills.filter(s=>s.archived).length;
+  if(archivedCount) lines.push(`\n(${archivedCount} skill(s) archived, not listed above.)`);
+  lines.push("");
+  lines.push("Please analyze this progress, flag any skill I'm neglecting or spreading too thin, and tell me what to focus on next.");
+  return lines.join("\n");
+}
+document.getElementById("reportBtn").addEventListener("click", async ()=>{
+  const text = buildReport();
+  try{ await navigator.clipboard.writeText(text); alert("Progress report copied — paste it to any LLM for analysis."); }
+  catch(e){
+    const blob = new Blob([text], {type:"text/plain"});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a"); a.href=url; a.download="progress-report.txt"; a.click();
+    URL.revokeObjectURL(url);
+  }
+});
+
+render();
+maybeShowWeeklyReview();
+</script>
+<script> if ("serviceWorker" in navigator) { navigator.serviceWorker.register("sw.js"); } </script>
+</body>
+</html>
